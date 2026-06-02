@@ -1,18 +1,17 @@
 // ============================================================
 // imageProcessing.js
-// Helligkeit der Biolumineszenz aus Fotos extrahieren —
-// reines Browser-JS, keine Deps.
+// Helligkeit der Biolumineszenz aus Fotos extrahieren — reines
+// Browser-JS. Funktioniert auf iPad, Android, Windows, macOS.
 //
-// Zwei Quellen:
-//   A) gebackene Fotos aus photos/manifest.json (Demo)
-//   B) vom Nutzer hochgeladene Fotos (File-Objekte) — mit
-//      automatischer Zeiterkennung und automatischer ROI-Suche.
-//
-// Canvas-Pixel lesen geht NICHT über file:// für photos/ (CORS).
-// Hochgeladene Dateien (blob:) sind immer lesbar — auch offline.
+// Upload-Pfad:
+//   - versucht zuerst, das Bild nativ zu dekodieren (JPEG/PNG/WebP;
+//     HEIC nur auf Safari/iOS nativ möglich);
+//   - schlägt das fehl und ist es HEIC/HEIF, wird es per heic2any
+//     (CDN) nach JPEG konvertiert und erneut versucht;
+//   - automatische Zeiterkennung (Datei-Zeitstempel) und ROI-Suche.
 // ============================================================
 
-/** Lädt ein Bild von einer URL. */
+/** Lädt ein Bild von einer URL (gebackene Demo-Fotos). */
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -23,15 +22,34 @@ function loadImage(src) {
   });
 }
 
-/** Lädt ein Bild aus einem File-Objekt (Upload). Liefert {img, url}. */
-function loadImageFromFile(file) {
+/** Versucht, einen Blob/File zu dekodieren. Liefert {img, url}. */
+function decodeBlob(blob, name) {
   return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
+    const url = URL.createObjectURL(blob);
     const img = new Image();
     img.onload = () => resolve({ img, url });
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Bild nicht lesbar: " + file.name)); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Bild nicht lesbar: " + (name || ""))); };
     img.src = url;
   });
+}
+
+/** Lädt ein Bild aus einem File — mit HEIC-Fallback. Liefert {img, url}. */
+async function loadImageFromFile(file) {
+  const isHeic = /heic|heif/i.test(file.type || "") || /\.(heic|heif)$/i.test(file.name || "");
+  // 1) nativer Versuch (Safari/iOS schaffen auch HEIC)
+  try {
+    return await decodeBlob(file, file.name);
+  } catch (e) {
+    // 2) HEIC → konvertieren und erneut versuchen
+    if (isHeic && typeof window !== "undefined" && window.heic2any) {
+      let out = await window.heic2any({ blob: file, toType: "image/jpeg", quality: 0.92 });
+      if (Array.isArray(out)) out = out[0];
+      return await decodeBlob(out, file.name);
+    }
+    throw isHeic
+      ? new Error("HEIC nicht unterstützt: " + file.name + " (Konverter nicht geladen)")
+      : e;
+  }
 }
 
 /** Relative Luminanz (Rec. 709). */
@@ -82,11 +100,7 @@ function estimateBackground(img, ctx, patch = 0.08) {
   return count ? sum / count : 0;
 }
 
-/**
- * Findet die leuchtende Lunke automatisch: hellste Region per Schwellenwert,
- * dann luminanz-gewichteter Schwerpunkt + Radius aus der Streuung.
- * Arbeitet auf einer verkleinerten Kopie (schnell). Liefert {cx,cy,r} relativ.
- */
+/** Findet die leuchtende Lunke automatisch (Schwellenwert + Schwerpunkt). */
 function detectROI(img, ctx) {
   const maxW = 320;
   const scale = Math.min(1, maxW / img.naturalWidth);
@@ -161,46 +175,62 @@ async function tryLoadPhotoMeasurements(manifestUrl = "photos/manifest.json") {
 }
 
 /**
- * Hochgeladene Fotos → Messdaten.
- * - Sortiert nach Aufnahmezeit (lastModified).
- * - Zeiten t automatisch aus den Zeitstempeln (Sekunden ab erstem Foto).
- *   Wenn unbrauchbar → Standard-Intervalle 0/30/60/180/300/900 s.
- * - ROI automatisch auf dem ersten (hellsten) Foto erkannt, für alle gleich.
- * Liefert { measurements, roi, timeSource }.
+ * Hochgeladene Fotos → Messdaten. Robust: einzelne unlesbare Dateien
+ * werden übersprungen, nicht der ganze Vorgang abgebrochen.
+ * Liefert { measurements, roi, timeSource, skipped }.
  */
 async function buildMeasurementsFromFiles(files) {
-  const list = [...files].filter(f => f.type && f.type.startsWith("image/"));
+  const list = [...files].filter(f =>
+    (f.type && f.type.startsWith("image/")) ||
+    /\.(heic|heif|jpe?g|png|webp|gif|bmp)$/i.test(f.name || "")
+  );
   if (list.length < 2) throw new Error("Bitte mindestens 2 Fotos auswählen.");
   list.sort((a, b) => a.lastModified - b.lastModified);
+
+  const t0 = list[0].lastModified;
+  const initialTimes = list.map(f => Math.round((f.lastModified - t0) / 1000));
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
-  const loaded = [];
-  for (const f of list) loaded.push({ f, ...(await loadImageFromFile(f)) });
-
-  // Zeiten aus Zeitstempeln
-  const t0 = list[0].lastModified;
-  let times = list.map(f => Math.round((f.lastModified - t0) / 1000));
-  const monotonic = times.every((t, i) => i === 0 || t > times[i - 1]) && times[times.length - 1] > 0;
-  let timeSource = "Aufnahme-Zeitstempel";
-  if (!monotonic) {
-    const STD = [0, 30, 60, 180, 300, 900];
-    times = loaded.map((_, i) => i < STD.length ? STD[i] : STD[STD.length - 1] + (i - STD.length + 1) * 300);
-    timeSource = "Standard-Intervalle (Zeitstempel unbrauchbar)";
+  const good = [], skipped = [];
+  for (let i = 0; i < list.length; i++) {
+    try {
+      const { img, url } = await loadImageFromFile(list[i]);
+      good.push({ img, url, t: initialTimes[i] });
+    } catch (e) {
+      skipped.push(list[i].name || "Datei");
+      console.warn(e.message);
+    }
+  }
+  if (good.length < 2) {
+    throw new Error(
+      `Nur ${good.length} von ${list.length} Bildern lesbar.` +
+      (skipped.length ? " Problem mit: " + skipped.join(", ") : "")
+    );
   }
 
-  // ROI auf dem ersten Frame erkennen, für alle anwenden
-  const roi = detectROI(loaded[0].img, ctx);
+  // Zeiten prüfen / ggf. Standard-Intervalle
+  let gt = good.map(g => g.t);
+  let timeSource = "Aufnahme-Zeitstempel";
+  const monotonic = gt.every((t, i) => i === 0 || t > gt[i - 1]) && gt[gt.length - 1] > 0;
+  if (!monotonic) {
+    const STD = [0, 30, 60, 180, 300, 900];
+    good.forEach((g, i) => { g.t = i < STD.length ? STD[i] : STD[STD.length - 1] + (i - STD.length + 1) * 300; });
+    timeSource = "Standard-Intervalle (Zeitstempel unbrauchbar)";
+  } else {
+    const z = good[0].t;
+    good.forEach(g => { g.t -= z; });
+  }
 
+  const roi = detectROI(good[0].img, ctx);
   const raw = [];
-  for (let i = 0; i < loaded.length; i++) {
-    const { img, url } = loaded[i];
-    canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
-    ctx.drawImage(img, 0, 0);
-    let lum = meanLuminanceInROI(img, roi, ctx);
-    lum = Math.max(0, lum - estimateBackground(img, ctx));
-    raw.push({ t: times[i], lum, src: url, label: times[i] + " s" });
+  for (const g of good) {
+    canvas.width = g.img.naturalWidth; canvas.height = g.img.naturalHeight;
+    ctx.drawImage(g.img, 0, 0);
+    let lum = meanLuminanceInROI(g.img, roi, ctx);
+    lum = Math.max(0, lum - estimateBackground(g.img, ctx));
+    raw.push({ t: g.t, lum, src: g.url, label: g.t + " s" });
   }
   const ref = raw[0].lum || 1;
   const measurements = raw.map(r => ({
@@ -208,5 +238,5 @@ async function buildMeasurementsFromFiles(files) {
     brightness: ref > 0 ? Math.round((r.lum / ref) * 1000) / 10 : 0,
     label: r.label, src: r.src
   }));
-  return { measurements, roi, timeSource };
+  return { measurements, roi, timeSource, skipped };
 }

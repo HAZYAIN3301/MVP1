@@ -234,11 +234,12 @@ async function startUpload(files) {
   beginUI();
   setStep('⏳ Verarbeite hochgeladene Fotos …');
   try {
-    const { measurements: ms, roi, timeSource } = await buildMeasurementsFromFiles(files);
+    const { measurements: ms, roi, timeSource, skipped } = await buildMeasurementsFromFiles(files);
     measurements = ms;
     objectUrls = ms.map(m => m.src);
     dataSource = "upload";
-    sourceNote = `Zeiten aus: ${timeSource}. Lunke automatisch erkannt (x=${(roi.cx * 100).toFixed(0)}%, y=${(roi.cy * 100).toFixed(0)}%).`;
+    const skipNote = skipped && skipped.length ? ` ${skipped.length} Datei(en) übersprungen.` : "";
+    sourceNote = `Zeiten aus: ${timeSource}. Lunke automatisch erkannt (x=${(roi.cx * 100).toFixed(0)}%, y=${(roi.cy * 100).toFixed(0)}%).${skipNote}`;
     setStep(
       `📷 ${ms.length} Fotos verarbeitet …<br>` +
       `<span class="source-badge">Zeiten: ${timeSource}</span>`
@@ -273,5 +274,22 @@ document.getElementById('file-input').addEventListener('change', (e) => {
   if (e.target.files && e.target.files.length) startUpload(e.target.files);
 });
 document.getElementById('reset-btn').addEventListener('click', reset);
+
+// Drag & Drop (Desktop) — Fotos auf die Intro-Karte ziehen
+const introEl = document.getElementById('intro');
+// Standard-Verhalten des Browsers (Datei öffnen) überall unterbinden
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev =>
+  document.addEventListener(ev, e => e.preventDefault(), false)
+);
+['dragenter', 'dragover'].forEach(ev =>
+  introEl.addEventListener(ev, () => introEl.classList.add('drag'))
+);
+['dragleave', 'drop'].forEach(ev =>
+  introEl.addEventListener(ev, () => introEl.classList.remove('drag'))
+);
+introEl.addEventListener('drop', e => {
+  const f = e.dataTransfer && e.dataTransfer.files;
+  if (f && f.length) startUpload(f);
+});
 
 initChart();

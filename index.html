@@ -21,8 +21,8 @@
       <button id="start-btn">▶ Analyse starten (Demo)</button>
       <div class="divider">oder</div>
       <button id="upload-btn" class="secondary">📷 Eigene Fotos hochladen</button>
-      <input id="file-input" type="file" accept="image/*" multiple hidden>
-      <p class="hint">Mehrere Fotos aus dem Experiment auswählen (z.B. bei 0 s, 30 s, 1, 3, 5, 15 min). Zeiten und leuchtende Lunke werden automatisch erkannt — kein Einstellen nötig.</p>
+      <input id="file-input" type="file" accept="image/*,.heic,.heif" multiple hidden>
+      <p class="hint">Mehrere Fotos aus dem Experiment auswählen (z.B. bei 0 s, 30 s, 1, 3, 5, 15 min) — oder am Computer einfach hierher ziehen. Zeiten und leuchtende Lunke werden automatisch erkannt, auch HEIC-Fotos vom iPhone. Kein Einstellen nötig.</p>
     </section>
 
     <section id="status" class="hidden">
@@ -50,6 +50,7 @@
     <p>Bio-Referat · A. Prokopets · Profil 7 Ökologie · 18.06.2026</p>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
   <script src="imageProcessing.js"></script>
   <script src="app.js"></script>
 </body>

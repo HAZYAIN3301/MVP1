@@ -55,6 +55,10 @@ main {
 #intro p {
   margin-bottom: 0.75rem;
 }
+#intro.drag {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.25);
+}
 #intro em {
   font-style: italic;
   color: var(--accent);
