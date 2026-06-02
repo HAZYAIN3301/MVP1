@@ -1,0 +1,14 @@
+{
+  "experiment": "NaClO 1 ppm (synthetische Testdaten)",
+  "synthetic": true,
+  "roi": { "cx": 0.5, "cy": 0.5, "r": 0.18 },
+  "subtractBackground": true,
+  "frames": [
+    { "t": 0,   "file": "t000.png", "label": "Kontrolle (vor Zugabe)" },
+    { "t": 30,  "file": "t030.png", "label": "30 Sekunden" },
+    { "t": 60,  "file": "t060.png", "label": "1 Minute" },
+    { "t": 180, "file": "t180.png", "label": "3 Minuten" },
+    { "t": 300, "file": "t300.png", "label": "5 Minuten" },
+    { "t": 900, "file": "t900.png", "label": "15 Minuten" }
+  ]
+}

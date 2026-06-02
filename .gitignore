@@ -1,0 +1,10 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# Interne Vortrags-Materialien — NICHT veröffentlichen
+# (Drehbuch, Einleitung, Notizen bleiben nur lokal)
+handout/

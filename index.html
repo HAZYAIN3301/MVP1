@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0a0a0f">
+  <title>Toxikologie-Detektiv · A. fischeri Biosensor</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>🦠 Toxikologie-Detektiv</h1>
+    <p class="subtitle">Welche Stoffklasse vergiftet das Wasser?</p>
+  </header>
+
+  <main>
+    <section id="intro" class="card">
+      <p>Eine Lösung mit <em>Aliivibrio fischeri</em> wurde mit einem unbekannten Stoff versetzt. Die Biolumineszenz wurde alle paar Minuten gemessen.</p>
+      <p><strong>Deine Aufgabe:</strong> Bestimme aus dem zeitlichen Verlauf, zu welcher Stoffklasse das Gift gehört.</p>
+      <button id="start-btn">▶ Analyse starten</button>
+    </section>
+
+    <section id="status" class="hidden">
+      <div id="step-indicator">Bereit zum Start</div>
+    </section>
+
+    <section id="chart-area" class="card">
+      <canvas id="kineticChart"></canvas>
+      <div id="thumbs" class="thumbs"></div>
+    </section>
+
+    <section id="result" class="card hidden">
+      <h2>Ergebnis</h2>
+      <div id="classification"></div>
+      <p id="explanation"></p>
+      <details>
+        <summary>Wie wurde das klassifiziert?</summary>
+        <p id="reasoning"></p>
+      </details>
+      <button id="reset-btn">↻ Neu starten</button>
+    </section>
+  </main>
+
+  <footer>
+    <p>Bio-Referat · A. Prokopets · Profil 7 Ökologie · 18.06.2026</p>
+  </footer>
+
+  <script src="imageProcessing.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
