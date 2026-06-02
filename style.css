@@ -95,6 +95,34 @@ button:disabled {
   color: #888;
   cursor: not-allowed;
 }
+button.secondary {
+  background: transparent;
+  border: 1.5px solid var(--accent-strong);
+  color: var(--accent);
+}
+button.secondary:hover:not(:disabled) { background: rgba(74, 158, 255, 0.1); }
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  margin: 0.9rem 0 0.3rem;
+}
+.divider::before, .divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid var(--card-border);
+  margin: 0 0.6rem;
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-top: 0.75rem;
+  line-height: 1.4;
+}
 
 #chart-area {
   min-height: 320px;

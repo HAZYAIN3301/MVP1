@@ -18,7 +18,11 @@
     <section id="intro" class="card">
       <p>Eine Lösung mit <em>Aliivibrio fischeri</em> wurde mit einem unbekannten Stoff versetzt. Die Biolumineszenz wurde alle paar Minuten gemessen.</p>
       <p><strong>Deine Aufgabe:</strong> Bestimme aus dem zeitlichen Verlauf, zu welcher Stoffklasse das Gift gehört.</p>
-      <button id="start-btn">▶ Analyse starten</button>
+      <button id="start-btn">▶ Analyse starten (Demo)</button>
+      <div class="divider">oder</div>
+      <button id="upload-btn" class="secondary">📷 Eigene Fotos hochladen</button>
+      <input id="file-input" type="file" accept="image/*" multiple hidden>
+      <p class="hint">Mehrere Fotos aus dem Experiment auswählen (z.B. bei 0 s, 30 s, 1, 3, 5, 15 min). Zeiten und leuchtende Lunke werden automatisch erkannt — kein Einstellen nötig.</p>
     </section>
 
     <section id="status" class="hidden">
