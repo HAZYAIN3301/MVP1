@@ -22,7 +22,19 @@
       <div class="divider">oder</div>
       <button id="upload-btn" class="secondary">📷 Eigene Fotos hochladen</button>
       <input id="file-input" type="file" accept="image/*,.heic,.heif" multiple hidden>
-      <p class="hint">Mehrere Fotos aus dem Experiment auswählen (z.B. bei 0 s, 30 s, 1, 3, 5, 15 min) — oder am Computer einfach hierher ziehen. Zeiten und leuchtende Lunke werden automatisch erkannt, auch HEIC-Fotos vom iPhone. Kein Einstellen nötig.</p>
+      <p class="hint">Empfohlen: <strong>4–6 Fotos</strong> aus dem Experiment (z.B. bei 0 s, 30 s, 1, 3, 5, 15 min), mindestens 2. Am Computer kannst du sie auch einfach hierher ziehen. Zeiten und leuchtende Lunke werden automatisch erkannt — auch HEIC vom iPhone.</p>
+    </section>
+
+    <section id="selection" class="card hidden">
+      <h2 id="sel-count">0 Fotos ausgewählt</h2>
+      <p class="hint">Reihenfolge wird automatisch nach Aufnahmezeit sortiert. Tippe auf <strong>✕</strong>, um ein Foto zu entfernen. Mindestens 2 Fotos — empfohlen 4–6.</p>
+      <div id="sel-grid" class="sel-grid"></div>
+      <div id="sel-error" class="sel-error hidden"></div>
+      <div class="sel-actions">
+        <button id="add-more-btn" class="secondary">＋ Weitere hinzufügen</button>
+        <button id="analyze-btn" disabled>▶ Analyse starten</button>
+      </div>
+      <button id="sel-cancel" class="ghost">Abbrechen</button>
     </section>
 
     <section id="status" class="hidden">

@@ -227,12 +227,95 @@ async function startDemo() {
   setTimeout(addNextMeasurement, 1000);
 }
 
-// Weg 2: eigene Fotos
+// ---------- Foto-Auswahl (Staging vor der Analyse) ----------
+let selectedFiles = [];
+let selPreviewUrls = [];
+
+function isHeic(file) {
+  return /heic|heif/i.test(file.type || "") || /\.(heic|heif)$/i.test(file.name || "");
+}
+
+function isAcceptedImage(file) {
+  return (file.type && file.type.startsWith("image/")) ||
+         /\.(heic|heif|jpe?g|png|webp|gif|bmp)$/i.test(file.name || "");
+}
+
+// Fotos zur Auswahl hinzufügen (NICHT sofort analysieren)
+function addFiles(fileList) {
+  const incoming = [...fileList].filter(isAcceptedImage);
+  if (!incoming.length) return;
+  selectedFiles = selectedFiles.concat(incoming);
+  selectedFiles.sort((a, b) => a.lastModified - b.lastModified); // gleiche Reihenfolge wie Analyse
+  document.getElementById('intro').classList.add('hidden');
+  document.getElementById('result').classList.add('hidden');
+  document.getElementById('status').classList.add('hidden');
+  document.getElementById('selection').classList.remove('hidden');
+  renderSelection();
+}
+
+function renderSelection() {
+  selPreviewUrls.forEach(u => URL.revokeObjectURL(u));
+  selPreviewUrls = [];
+
+  const grid = document.getElementById('sel-grid');
+  grid.innerHTML = '';
+  selectedFiles.forEach((file, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'sel-thumb';
+    let media;
+    if (isHeic(file)) {
+      media = `<div class="heic-tile">📷<span>HEIC</span></div>`;
+    } else {
+      const url = URL.createObjectURL(file);
+      selPreviewUrls.push(url);
+      media = `<img src="${url}" alt="">`;
+    }
+    cell.innerHTML = media +
+      `<span class="order">${i + 1}</span>` +
+      `<button class="remove" data-i="${i}" aria-label="entfernen">✕</button>`;
+    grid.appendChild(cell);
+  });
+
+  const n = selectedFiles.length;
+  document.getElementById('sel-count').textContent =
+    n === 1 ? '1 Foto ausgewählt' : `${n} Fotos ausgewählt`;
+  const analyzeBtn = document.getElementById('analyze-btn');
+  analyzeBtn.disabled = n < 2;
+  analyzeBtn.textContent = n < 2 ? '▶ Analyse starten (mind. 2 Fotos)' : `▶ Analyse starten (${n} Fotos)`;
+
+  const err = document.getElementById('sel-error');
+  if (n < 2) {
+    err.textContent = 'Mindestens 2 Fotos nötig (empfohlen 4–6 zu verschiedenen Zeiten).';
+    err.classList.remove('hidden');
+  } else {
+    err.classList.add('hidden');
+  }
+
+  grid.querySelectorAll('.remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedFiles.splice(+btn.dataset.i, 1);
+      if (selectedFiles.length === 0) { cancelSelection(); return; }
+      renderSelection();
+    });
+  });
+}
+
+function cancelSelection() {
+  selPreviewUrls.forEach(u => URL.revokeObjectURL(u));
+  selPreviewUrls = [];
+  selectedFiles = [];
+  document.getElementById('file-input').value = '';
+  document.getElementById('selection').classList.add('hidden');
+  document.getElementById('intro').classList.remove('hidden');
+}
+
+// ---------- Analyse der ausgewählten Fotos ----------
 async function startUpload(files) {
   objectUrls.forEach(u => URL.revokeObjectURL(u));
   objectUrls = [];
+  document.getElementById('selection').classList.add('hidden');
   beginUI();
-  setStep('⏳ Verarbeite hochgeladene Fotos …');
+  setStep('⏳ Verarbeite Fotos …');
   try {
     const { measurements: ms, roi, timeSource, skipped } = await buildMeasurementsFromFiles(files);
     measurements = ms;
@@ -240,15 +323,16 @@ async function startUpload(files) {
     dataSource = "upload";
     const skipNote = skipped && skipped.length ? ` ${skipped.length} Datei(en) übersprungen.` : "";
     sourceNote = `Zeiten aus: ${timeSource}. Lunke automatisch erkannt (x=${(roi.cx * 100).toFixed(0)}%, y=${(roi.cy * 100).toFixed(0)}%).${skipNote}`;
-    setStep(
-      `📷 ${ms.length} Fotos verarbeitet …<br>` +
-      `<span class="source-badge">Zeiten: ${timeSource}</span>`
-    );
+    selPreviewUrls.forEach(u => URL.revokeObjectURL(u)); selPreviewUrls = []; selectedFiles = [];
+    setStep(`📷 ${ms.length} Fotos verarbeitet …<br><span class="source-badge">Zeiten: ${timeSource}</span>`);
     setTimeout(addNextMeasurement, 1000);
   } catch (err) {
-    setStep('⚠️ ' + err.message);
-    document.getElementById('intro').classList.remove('hidden');
+    // Fehler sichtbar machen, Auswahl behalten
     document.getElementById('status').classList.add('hidden');
+    document.getElementById('selection').classList.remove('hidden');
+    const e = document.getElementById('sel-error');
+    e.textContent = '⚠️ ' + err.message + ' — Fotos prüfen oder andere wählen.';
+    e.classList.remove('hidden');
   }
 }
 
@@ -256,10 +340,14 @@ function reset() {
   if (measurementTimer) clearTimeout(measurementTimer);
   objectUrls.forEach(u => URL.revokeObjectURL(u));
   objectUrls = [];
+  selPreviewUrls.forEach(u => URL.revokeObjectURL(u));
+  selPreviewUrls = [];
+  selectedFiles = [];
   measurementIndex = 0;
   chart.data.datasets[0].data = [];
   chart.update();
   document.getElementById('thumbs').innerHTML = '';
+  document.getElementById('selection').classList.add('hidden');
   document.getElementById('intro').classList.remove('hidden');
   document.getElementById('status').classList.add('hidden');
   document.getElementById('result').classList.add('hidden');
@@ -267,29 +355,28 @@ function reset() {
 }
 
 document.getElementById('start-btn').addEventListener('click', startDemo);
-document.getElementById('upload-btn').addEventListener('click', () => {
-  document.getElementById('file-input').click();
-});
+document.getElementById('upload-btn').addEventListener('click', () => document.getElementById('file-input').click());
+document.getElementById('add-more-btn').addEventListener('click', () => document.getElementById('file-input').click());
 document.getElementById('file-input').addEventListener('change', (e) => {
-  if (e.target.files && e.target.files.length) startUpload(e.target.files);
+  if (e.target.files && e.target.files.length) addFiles(e.target.files);
+  e.target.value = ''; // erlaubt erneutes Auswählen derselben Datei
 });
+document.getElementById('analyze-btn').addEventListener('click', () => {
+  if (selectedFiles.length >= 2) startUpload(selectedFiles);
+});
+document.getElementById('sel-cancel').addEventListener('click', cancelSelection);
 document.getElementById('reset-btn').addEventListener('click', reset);
 
-// Drag & Drop (Desktop) — Fotos auf die Intro-Karte ziehen
+// Drag & Drop (Desktop) — Fotos in die AUSWAHL ziehen (nicht sofort analysieren)
 const introEl = document.getElementById('intro');
-// Standard-Verhalten des Browsers (Datei öffnen) überall unterbinden
 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev =>
   document.addEventListener(ev, e => e.preventDefault(), false)
 );
-['dragenter', 'dragover'].forEach(ev =>
-  introEl.addEventListener(ev, () => introEl.classList.add('drag'))
-);
-['dragleave', 'drop'].forEach(ev =>
-  introEl.addEventListener(ev, () => introEl.classList.remove('drag'))
-);
+['dragenter', 'dragover'].forEach(ev => introEl.addEventListener(ev, () => introEl.classList.add('drag')));
+['dragleave', 'drop'].forEach(ev => introEl.addEventListener(ev, () => introEl.classList.remove('drag')));
 introEl.addEventListener('drop', e => {
   const f = e.dataTransfer && e.dataTransfer.files;
-  if (f && f.length) startUpload(f);
+  if (f && f.length) addFiles(f);
 });
 
 initChart();
