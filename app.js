@@ -170,32 +170,49 @@ function profileDistance(measured, reference) {
 }
 
 function classifyAndShow() {
+  // Toxizität = wie stark das Leuchten gefallen ist (tiefster erreichter Wert)
+  const minB = Math.min.apply(null, measurements.map(m => m.brightness));
+  const inhib = Math.max(0, Math.round(100 - minB));
+  let level, cls;
+  if (inhib >= 70)      { level = 'Stark giftig';        cls = 'tox-strong'; }
+  else if (inhib >= 30) { level = 'Mäßig giftig';        cls = 'tox-mid'; }
+  else if (inhib >= 10) { level = 'Schwach giftig';      cls = 'tox-low'; }
+  else                  { level = 'Kaum / nicht giftig'; cls = 'tox-low'; }
+
+  setStep('✓ <strong>Analyse abgeschlossen</strong>');
+
+  const classification = document.getElementById('classification');
+  classification.className = cls;
+  classification.innerHTML =
+    `${level}<br><span style="font-size: 0.85em; font-weight: 400; opacity: 0.85;">Biolumineszenz auf ${Math.round(minB)}% gefallen — ${inhib}% Hemmung</span>`;
+
+  document.getElementById('explanation').textContent =
+    'Je stärker das Leuchten fällt, desto giftiger ist die Probe: Die Bakterien drosseln ihre Lichtproduktion, sobald sie unter Stress stehen.';
+
+  // Kinetischer Fingerabdruck = offene Forschungsfrage (kein Urteil über die Klasse)
   const distances = {};
   for (const [key, profile] of Object.entries(referenceProfiles)) {
     distances[key] = profileDistance(measurements, profile.data);
   }
   const sorted = Object.entries(distances).sort((a, b) => a[1] - b[1]);
-  const best = sorted[0][0];
-  const result = classificationLabels[best];
-
-  setStep('✓ <strong>Analyse abgeschlossen</strong>');
-
-  const classification = document.getElementById('classification');
-  classification.className = result.cssClass;
-  classification.innerHTML =
-    `${result.name}<br><span style="font-size: 0.85em; font-weight: 400; opacity: 0.85;">${result.example}</span>`;
-  document.getElementById('explanation').textContent = result.explanation;
+  const closest = classificationLabels[sorted[0][0]].name;
+  document.getElementById('hypothesis').innerHTML =
+    `<strong>Offene Forschungsfrage — kinetischer Fingerabdruck:</strong> ` +
+    `Die Form dieser Kurve ähnelt am ehesten dem Profil „${closest}". ` +
+    `Ob die <em>Form</em> einer einzelnen Kurve die Stoffklasse zuverlässig verrät, ist nicht gesichert — das untersuche ich im Jugend-forscht-Projekt. ` +
+    `Eine einzelne Messung zeigt vor allem, <em>wie</em> giftig die Probe ist, nicht <em>welcher</em> Stoff es ist.`;
 
   const reasoning = sorted.map(([key, dist]) =>
-    `${classificationLabels[key].name}: Abstand = ${dist.toFixed(1)}`
+    `${classificationLabels[key].name}: Abstand ${dist.toFixed(1)}`
   ).join(' · ');
   const sourceTxt = {
-    photos: "Datenquelle: Demo-Fotos.",
-    upload: "Datenquelle: hochgeladene Fotos. " + sourceNote,
-    fallback: "Datenquelle: Demo-Werte (keine Fotos geladen)."
+    photos: "Demo-Fotos.",
+    upload: "hochgeladene Fotos. " + sourceNote,
+    fallback: "Demo-Werte (keine Fotos geladen)."
   }[dataSource];
   document.getElementById('reasoning').textContent =
-    `Vergleich der gemessenen Kurve mit drei Referenz-Profilen (mittlere euklidische Distanz pro Zeitpunkt, interpoliert). ${reasoning}. Kleinste Distanz = beste Übereinstimmung. ${sourceTxt}`;
+    `Helligkeit jedes Fotos in der Sensor-Lunke gemessen, auf das erste Foto (100 %) normiert. Tiefster Wert: ${Math.round(minB)} %. ` +
+    `Kurvenform-Vergleich (mittlere Distanz pro Zeitpunkt): ${reasoning}. Datenquelle: ${sourceTxt}`;
 
   document.getElementById('result').classList.remove('hidden');
 }
@@ -366,6 +383,12 @@ document.getElementById('analyze-btn').addEventListener('click', () => {
 });
 document.getElementById('sel-cancel').addEventListener('click', cancelSelection);
 document.getElementById('reset-btn').addEventListener('click', reset);
+
+// Info-Modal „Wie funktioniert das?"
+const infoOverlay = document.getElementById('info-overlay');
+document.getElementById('info-btn').addEventListener('click', () => infoOverlay.classList.remove('hidden'));
+document.getElementById('info-close').addEventListener('click', () => infoOverlay.classList.add('hidden'));
+infoOverlay.addEventListener('click', e => { if (e.target === infoOverlay) infoOverlay.classList.add('hidden'); });
 
 // Drag & Drop (Desktop) — Fotos in die AUSWAHL ziehen (nicht sofort analysieren)
 const introEl = document.getElementById('intro');

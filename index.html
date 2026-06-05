@@ -11,13 +11,14 @@
 <body>
   <header>
     <h1>🦠 Toxikologie-Detektiv</h1>
-    <p class="subtitle">Welche Stoffklasse vergiftet das Wasser?</p>
+    <p class="subtitle">Wie giftig ist das Wasser? Bakterien zeigen es mit Licht.</p>
+    <button id="info-btn" class="info-btn">ℹ️ Wie funktioniert das?</button>
   </header>
 
   <main>
     <section id="intro" class="card">
       <p>Eine Lösung mit <em>Aliivibrio fischeri</em> wurde mit einem unbekannten Stoff versetzt. Die Biolumineszenz wurde alle paar Minuten gemessen.</p>
-      <p><strong>Deine Aufgabe:</strong> Bestimme aus dem zeitlichen Verlauf, zu welcher Stoffklasse das Gift gehört.</p>
+      <p><strong>Deine Aufgabe:</strong> Lies aus dem zeitlichen Verlauf ab, <strong>wie giftig</strong> die Probe ist — je stärker das Leuchten fällt, desto giftiger.</p>
       <button id="start-btn">▶ Analyse starten (Demo)</button>
       <div class="divider">oder</div>
       <button id="upload-btn" class="secondary">📷 Eigene Fotos hochladen</button>
@@ -50,8 +51,9 @@
       <h2>Ergebnis</h2>
       <div id="classification"></div>
       <p id="explanation"></p>
+      <div id="hypothesis" class="hypo-box"></div>
       <details>
-        <summary>Wie wurde das klassifiziert?</summary>
+        <summary>Details zur Messung</summary>
         <p id="reasoning"></p>
       </details>
       <button id="reset-btn">↻ Neu starten</button>
@@ -62,8 +64,33 @@
     <p>Bio-Referat · A. Prokopets · Profil 7 Ökologie · 18.06.2026</p>
   </footer>
 
+  <div id="info-overlay" class="overlay hidden">
+    <div class="modal">
+      <button id="info-close" class="modal-close" aria-label="schließen">✕</button>
+      <h2>Wie funktioniert das?</h2>
+      <h3>Die Idee</h3>
+      <p>Die Meeresbakterie <em>Aliivibrio fischeri</em> leuchtet von Natur aus. Gerät sie unter Stress — etwa durch einen Giftstoff im Wasser — spart sie Energie, und das Leuchten wird schwächer. <strong>Je giftiger die Probe, desto stärker fällt das Licht.</strong></p>
+      <h3>Was die App misst</h3>
+      <ol>
+        <li>Fotos der Sensor-Lunke zu verschiedenen Zeiten eingeben (oder das Demo nutzen).</li>
+        <li>Die App misst die Helligkeit jedes Fotos und normiert sie auf das erste (= 100 %).</li>
+        <li>Daraus entsteht eine Kurve: Biolumineszenz über die Zeit.</li>
+        <li>Wie tief die Kurve fällt → <strong>wie giftig</strong> die Probe ist.</li>
+      </ol>
+      <h3>Die offene Forschungsfrage</h3>
+      <p>Verrät auch die <em>Form</em> der Kurve, <em>welche</em> Stoffklasse vorliegt (Oxidationsmittel, Schwermetall, organischer Schadstoff)? Das ist noch nicht gesichert — genau diese Hypothese, den „kinetischen Fingerabdruck“, untersuche ich in meinem Jugend-forscht-Projekt. Eine einzelne Messung zeigt vor allem, <em>wie</em> giftig die Probe ist.</p>
+      <h3>Bedienung</h3>
+      <p>„Analyse starten (Demo)“ nutzt vorbereitete Fotos. „Eigene Fotos hochladen“ wertet deine Bilder aus — Aufnahmezeiten und die leuchtende Lunke werden automatisch erkannt, auch HEIC vom iPhone.</p>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
   <script src="imageProcessing.js"></script>
   <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+  </script>
 </body>
 </html>

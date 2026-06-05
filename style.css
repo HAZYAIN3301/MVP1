@@ -277,6 +277,53 @@ button.ghost {
 }
 button.ghost:hover:not(:disabled) { color: var(--text); background: transparent; }
 
+/* ---- Toxizitäts-Ergebnis ---- */
+#classification.tox-strong { background: rgba(210,59,59,0.14); color: #ff9b9b; border-color: #d23b3b; }
+#classification.tox-mid    { background: rgba(255,170,60,0.14); color: #ffce8a; border-color: #e0972f; }
+#classification.tox-low    { background: rgba(107,255,142,0.12); color: #8bf0a6; border-color: #5fc77e; }
+
+.hypo-box {
+  background: rgba(74,158,255,0.10);
+  border: 1px solid rgba(74,158,255,0.35);
+  border-radius: 10px; padding: 0.9rem 1rem; margin: 0.9rem 0;
+  font-size: 0.92rem; color: #c8d8ee; line-height: 1.5;
+}
+.hypo-box strong { color: var(--accent); }
+.hypo-box em { color: var(--accent); font-style: italic; }
+
+/* ---- Info-Knopf + Modal ---- */
+.info-btn {
+  display: block; width: fit-content; margin: 0.7rem auto 0;
+  padding: 0.5rem 1.1rem; font-size: 0.85rem;
+  background: transparent; border: 1px solid var(--card-border);
+  color: var(--text-dim); border-radius: 999px;
+}
+.info-btn:hover:not(:disabled) { background: var(--card); color: var(--text); }
+
+.overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.72);
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem; z-index: 100; overflow-y: auto;
+}
+.modal {
+  position: relative; background: var(--card); border: 1px solid var(--card-border);
+  border-radius: 16px; padding: 1.6rem 1.4rem; max-width: 560px; width: 100%;
+  max-height: 90vh; overflow-y: auto;
+}
+.modal h2 { color: var(--accent); margin-bottom: 0.6rem; }
+.modal h3 { color: var(--accent); font-size: 1.05rem; margin: 1.1rem 0 0.3rem; }
+.modal p, .modal li { color: #c8c8d0; font-size: 0.95rem; line-height: 1.55; }
+.modal ol { padding-left: 1.2rem; margin: 0.3rem 0; }
+.modal li { margin: 0.25rem 0; }
+.modal em { color: var(--accent); font-style: italic; }
+.modal-close {
+  position: absolute; top: 0.7rem; right: 0.7rem; width: 34px; height: 34px;
+  margin: 0; padding: 0; border: none; border-radius: 50%;
+  background: #2a2a36; color: var(--text); font-size: 1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-close:hover:not(:disabled) { background: #3a3a48; }
+
 .hidden { display: none !important; }
 
 footer {
